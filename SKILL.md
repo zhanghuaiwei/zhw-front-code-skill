@@ -266,6 +266,177 @@ const FORM_ITEMS = [
 
 ---
 
+#### 🔌 数据分层：抽离到 composables
+
+**所有驱动视图的数据，必须按「响应式」和「非响应式」分层，统一抽离到 composables**
+
+---
+
+##### ✅ 拆分原则
+
+| 数据类型 | 存放位置 | 特点 |
+|----------|---------|------|
+| **🔴 响应式数据** | `ref/reactive` 包裹 | 状态会变，驱动视图更新 |
+| **🟢 非响应式数据** | 组件外常量 / `const` 普通变量 | 纯配置，永不改变 |
+
+---
+
+##### ❌ 反面教材（不要这么写）
+```tsx
+// ❌ 所有东西都堆在组件里，混乱不堪
+export default function UserList() {
+  // 响应式状态
+  const [status, setStatus] = useState(0)
+  const [list, setList] = useState([])
+  
+  // ❌ 非响应式配置也写在组件里，每次渲染都重新创建
+  const STATUS_OPTIONS = [
+    { value: 0, label: '待审核' },
+    { value: 1, label: '已通过' }
+  ]
+  
+  const TABLE_COLUMNS = [
+    { title: '用户名', dataIndex: 'username' },
+    { title: '状态', render: renderStatus }
+  ]
+  
+  // 渲染视图...
+}
+```
+
+---
+
+##### ✅ 正确姿势：抽离到 composables
+
+**目录结构**：
+```
+views/user/
+├── index.tsx              # 视图层，只负责渲染
+└── composables/
+    ├── useConstant.ts      # 🟢 非响应式配置常量
+    └── useUserData.ts      # 🔴 响应式状态 + 业务逻辑
+```
+
+---
+
+###### 第一步：`useConstant.ts` - 纯配置常量
+```tsx
+// 🟢 所有非响应式数据，全部抽离到这里
+// （注意：在组件作用域外定义，只初始化一次）
+
+export const STATUS_OPTIONS = [
+  { value: 0, label: '待审核', type: 'info' },
+  { value: 1, label: '已通过', type: 'success' },
+  { value: 2, label: '审核中', type: 'warning' },
+  { value: 3, label: '已驳回', type: 'danger' },
+] as const
+
+export const TABLE_COLUMNS = [
+  {
+    title: '用户名',
+    dataIndex: 'username',
+    width: 120
+  },
+  {
+    title: '状态',
+    dataIndex: 'status',
+    width: 100,
+    render: (status: number) => {
+      const item = STATUS_OPTIONS.find(opt => opt.value === status)
+      return item ? <Badge type={item.type}>{item.label}</Badge> : null
+    }
+  }
+] as const
+
+export const SEARCH_FORM_ITEMS = [
+  { name: 'username', label: '用户名', type: 'input' },
+  { name: 'status', label: '状态', type: 'select', options: STATUS_OPTIONS }
+] as const
+```
+
+---
+
+###### 第二步：`useUserData.ts` - 响应式业务状态
+```tsx
+// 🔴 所有响应式状态 + 业务逻辑，全部抽离到这里
+
+import { STATUS_OPTIONS } from './useConstant'
+
+export function useUserData() {
+  // 响应式状态
+  const list = ref<User[]>([])
+  const loading = ref(false)
+  const searchParams = reactive({
+    username: '',
+    status: undefined
+  })
+  
+  // 计算属性
+  const statusLabel = computed(() => {
+    return (status: number) => STATUS_OPTIONS.find(x => x.value === status)?.label
+  })
+  
+  // 业务方法
+  const fetchList = async () => {
+    loading.value = true
+    list.value = await getUserList(searchParams)
+    loading.value = false
+  }
+  
+  return {
+    list,
+    loading,
+    searchParams,
+    statusLabel,
+    fetchList
+  }
+}
+```
+
+---
+
+###### 第三步：视图层，干干净净
+```tsx
+import { TABLE_COLUMNS, SEARCH_FORM_ITEMS } from './composables/useConstant'
+import { useUserData } from './composables/useUserData'
+
+export default function UserList() {
+  // 只引入，不定义
+  const { list, loading, searchParams, fetchList } = useUserData()
+  
+  // 🎯 视图层只有三件事：
+  // 1. 引入 composables
+  // 2. 把数据传给组件
+  // 3. 渲染！
+  return (
+    <PageContainer>
+      {/* 搜索表单 */}
+      <SearchForm items={SEARCH_FORM_ITEMS} model={searchParams} onSearch={fetchList} />
+      
+      {/* 数据表格 */}
+      <ProTable
+        columns={TABLE_COLUMNS}
+        dataSource={list}
+        loading={loading}
+      />
+    </PageContainer>
+  )
+}
+```
+
+---
+
+##### 💡 这么做的好处
+
+| 分层 | 优点 |
+|------|------|
+| **视图层** | 干干净净，只有渲染，没有任何业务逻辑 |
+| **常量层** | 只初始化一次，性能更好，修改集中 |
+| **逻辑层** | 独立可测试，可在多组件间复用 |
+| **协作** | 改配置找 `useConstant`，改逻辑找 `useUserData`，不用翻大文件 |
+
+---
+
 ## 四、标准代码模板
 
 ### 4.1 标准组件模板（官方风格 + 个人习惯）
