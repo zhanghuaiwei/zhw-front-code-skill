@@ -1,7 +1,7 @@
 # 🧠 ZHW Frontend Coding Skill
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Version-2.1-blue.svg" alt="Version 2.1">
+  <img src="https://img.shields.io/badge/Version-3.0-blue.svg" alt="Version 3.0">
   <img src="https://img.shields.io/badge/Trae-AgentSkill-green.svg" alt="Trae Agent Skill">
   <img src="https://img.shields.io/badge/Digital_Life-1.0-purple.svg" alt="Digital Life 1.0">
   <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License">
@@ -65,14 +65,14 @@ Trae IDE 会自动从 `.trae/skills/` 目录加载 Skill：
 ```bash
 # 安装到当前项目
 mkdir -p .trae/skills
-git clone https://github.com/zhanghuaiwei/zhw-front-skill .trae/skills/zhw-front-skill
+git clone https://github.com/zhanghuaiwei/zhw-front-code-skill .trae/skills/zhw-front-code-skill
 ```
 
 ### Claude Code
 
 ```bash
 mkdir -p .claude/skills
-git clone https://github.com/zhanghuaiwei/zhw-front-skill .claude/skills/zhw-front-skill
+git clone https://github.com/zhanghuaiwei/zhw-front-code-skill .claude/skills/zhw-front-code-skill
 ```
 
 ### 🔄 更新 Skill
@@ -81,15 +81,15 @@ Skill 会持续进化，建议定期更新：
 
 **方案 1：干净更新（推荐）**
 ```bash
-cd .trae/skills/zhw-front-skill   # 或者 ~/.claude/skills/zhw-front-skill
+cd .trae/skills/zhw-front-code-skill   # 或者 ~/.claude/skills/zhw-front-code-skill
 git fetch origin
 git reset --hard origin/main
 ```
 
 **方案 2：重新安装（万无一失）**
 ```bash
-rm -rf .trae/skills/zhw-front-skill
-git clone https://github.com/zhanghuaiwei/zhw-front-skill .trae/skills/zhw-front-skill
+rm -rf .trae/skills/zhw-front-code-skill
+git clone https://github.com/zhanghuaiwei/zhw-front-code-skill .trae/skills/zhw-front-code-skill
 ```
 
 > 💡 最佳实践：不要在 skills 目录下直接修改代码。应该在单独仓库开发，更新后拉取过来。
