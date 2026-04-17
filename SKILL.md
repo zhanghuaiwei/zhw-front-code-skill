@@ -136,9 +136,139 @@ src/
 
 ---
 
-## 三、标准代码模板
+## 三、核心编码哲学
 
-### 3.1 标准组件模板（官方风格 + 个人习惯）
+### 🧩 数据驱动视图（最高优先级原则）
+
+**这是所有组件封装的第一准则，优先级高于一切！**
+
+---
+
+#### ✅ 核心思想
+
+> ❌ 禁止写：`if/else` + 重复 JSX
+> ✅ 必须写：**配置数组 + map 迭代渲染**
+
+所有视觉上的相似元素，全部通过**数据配置化 + 循环渲染**实现。
+
+---
+
+#### ❌ 反面教材（绝对禁止）
+```tsx
+// ❌ 傻逼式写法：写 N 个 if/else + 重复代码
+const renderStatus = (status: number) => {
+  if (status === 0) return <Badge type="info">待审核</Badge>
+  if (status === 1) return <Badge type="success">已通过</Badge>
+  if (status === 2) return <Badge type="warning">审核中</Badge>
+  if (status === 3) return <Badge type="danger">已驳回</Badge>
+}
+
+// ❌ 文盲式写法：硬编码写死
+<div className="status-badge">
+  {status === 0 && <Badge type="info">待审核</Badge>}
+  {status === 1 && <Badge type="success">已通过</Badge>}
+</div>
+```
+
+---
+
+#### ✅ 正确姿势（强制要求）
+```tsx
+// ✅ 第一步：枚举配置化，定义映射关系
+const STATUS_OPTIONS = [
+  { value: 0, label: '待审核', type: 'info', color: '#1677FF' },
+  { value: 1, label: '已通过', type: 'success', color: '#52C41A' },
+  { value: 2, label: '审核中', type: 'warning', color: '#FAAD14' },
+  { value: 3, label: '已驳回', type: 'danger', color: '#FF4D4F' },
+] as const
+
+// ✅ 第二步：map 迭代渲染，一行搞定
+const renderStatus = (status: number) => {
+  const item = STATUS_OPTIONS.find(opt => opt.value === status)
+  return item ? <Badge type={item.type}>{item.label}</Badge> : null
+}
+
+// ✅ 第三步：遍历配置直接渲染下拉选择器
+<Select>
+  {STATUS_OPTIONS.map(opt => (
+    <Option key={opt.value} value={opt.value}>
+      {opt.label}
+    </Option>
+  ))}
+</Select>
+```
+
+---
+
+#### 🏆 进阶：表单/表格全数据驱动
+
+**表格列配置化**：
+```tsx
+// ✅ 所有列定义抽离成配置数组
+const TABLE_COLUMNS = [
+  {
+    title: '用户名',
+    dataIndex: 'username',
+    width: 120,
+    render: (text) => <Link to={`/user/${text}`}>{text}</Link>
+  },
+  {
+    title: '状态',
+    dataIndex: 'status',
+    width: 100,
+    render: renderStatus
+  },
+  {
+    title: '操作',
+    width: 150,
+    fixed: 'right',
+    render: (_, record) => <ActionButtons record={record} />
+  }
+]
+
+// ✅ 视图层干干净净，只有数据传入
+<Table columns={TABLE_COLUMNS} dataSource={list} />
+```
+
+**表单项配置化**：
+```tsx
+// ✅ 表单配置数组
+const FORM_ITEMS = [
+  { name: 'username', label: '用户名', type: 'input', required: true },
+  { name: 'password', label: '密码', type: 'password', required: true },
+  { name: 'role', label: '角色', type: 'select', options: ROLE_OPTIONS },
+  { name: 'status', label: '状态', type: 'radio', options: STATUS_OPTIONS }
+]
+
+// ✅ 循环渲染整个表单
+<Form>
+  {FORM_ITEMS.map(item => (
+    <FormItem key={item.name} name={item.name} label={item.label}>
+      {renderFormItem(item)}
+    </FormItem>
+  ))}
+</Form>
+```
+
+---
+
+#### 💡 为什么要这么做？
+
+| 优势 | 说明 |
+|------|------|
+| **可维护性** | 修改只改配置数组，不用动渲染逻辑 |
+| **可扩展性** | 新增状态/列，只需 push 一项配置 |
+| **一致性** | 多处使用同一份数据源，保证统一 |
+| **可测试** | 纯数据数组，单测只测配置是否正确 |
+| **代码量** | 减少 70% 重复代码 |
+
+> 🚨 **铁律**：只要发现写了 3 个以上并列的 `if/else` 或 JSX，直接打回重写。不接受反驳！
+
+---
+
+## 四、标准代码模板
+
+### 4.1 标准组件模板（官方风格 + 个人习惯）
 
 **组件拆分原则**：
 1. 🔴 **硬性红线**：组件代码行数大于 400 行，必须拆分
